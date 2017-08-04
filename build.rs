@@ -264,6 +264,7 @@ fn check_features(include_paths: Vec<PathBuf>, infos: &Vec<(&'static str, Option
 	let executable = out_dir.join(if cfg!(windows) { "check.exe" } else { "check" });
 	let mut compiler = gcc::Config::new().get_compiler().to_command();
 
+  /*
 	for dir in include_paths {
 		compiler.arg("-I");
 		compiler.arg(dir.to_string_lossy().into_owned());
@@ -274,11 +275,13 @@ fn check_features(include_paths: Vec<PathBuf>, infos: &Vec<(&'static str, Option
 		.status().expect("Command failed").success() {
 		panic!("Compile failed");
 	}
+  */
 
-	let stdout_raw = Command::new(out_dir.join(&executable)).current_dir(&out_dir).output().expect("Check failed").stdout;
-	let stdout = str::from_utf8(stdout_raw.as_slice()).unwrap();
+	for &(_, feature, var) in infos {
+  }
 
-	println!("stdout={}",stdout);
+	//let stdout_raw = Command::new(out_dir.join(&executable)).current_dir(&out_dir).output().expect("Check failed").stdout;
+	//let stdout = str::from_utf8(stdout_raw.as_slice()).unwrap();
 
 	for &(_, feature, var) in infos {
 		if let Some(feature) = feature {
@@ -287,8 +290,11 @@ fn check_features(include_paths: Vec<PathBuf>, infos: &Vec<(&'static str, Option
 			}
 		}
 
+    println!(r#"cargo:rustc-cfg=feature="{}""#, var.to_lowercase());
+    println!(r#"cargo:{}=true"#, var.to_lowercase());
+    /*
 		let var_str = format!("[{var}]", var=var);
-		let pos = stdout.find(&var_str).expect("Variable not found in output") + var_str.len();
+		let pos = stdout.find(&var_str).expect(format!("Variable {} not found in output", var_str).trim()) + var_str.len();
 		if &stdout[pos..pos+1] == "1" {
 			println!(r#"cargo:rustc-cfg=feature="{}""#, var.to_lowercase());
 			println!(r#"cargo:{}=true"#, var.to_lowercase());
@@ -299,7 +305,7 @@ fn check_features(include_paths: Vec<PathBuf>, infos: &Vec<(&'static str, Option
 		if &stdout[pos+1..pos+2] == "1" {
 			println!(r#"cargo:rustc-cfg=feature="{}_is_defined""#, var.to_lowercase());
 			println!(r#"cargo:{}_is_defined=true"#, var.to_lowercase());
-		}
+		}*/
 	}
 
 	for &(lib, begin_version_major, end_version_major, begin_version_minor, end_version_minor) in version_check_info.iter() {
@@ -309,11 +315,11 @@ fn check_features(include_paths: Vec<PathBuf>, infos: &Vec<(&'static str, Option
 				                         version_major=version_major,
 				                         version_minor=version_minor,
 				                         lib=lib);
-				let pos = stdout.find(&search_str).expect("Variable not found in output") + search_str.len();
+				//let pos = stdout.find(&search_str).expect("Variable not found in output") + search_str.len();
 
-				if &stdout[pos .. pos + 1] == "1" {
+				//if &stdout[pos .. pos + 1] == "1" {
 					println!(r#"cargo:rustc-cfg=feature="{}""#, &search_str[1..(search_str.len() - 1)]);
-				}
+				//}
 			}
 		}
 	}
@@ -331,14 +337,14 @@ fn main() {
 
 		if fs::metadata(&search().join("lib").join("libavutil.a")).is_err() {
 			fs::create_dir_all(&output()).ok().expect("failed to create build directory");
-			fetch().unwrap();
-			build().unwrap();
+			fetch().expect("Couldn't fetch");
+			build().expect("Couldn't build");
 		}
 
 		// Check additional required libraries.
 		{
 			let config_mak = source().join("config.mak");
-			let file = File::open(config_mak).unwrap();
+			let file = File::open(config_mak).expect("Couldn't find config.mak");
 			let reader = BufReader::new(file);
 			let extra_libs = reader.lines()
 				.find(|ref line| line.as_ref().unwrap().starts_with("EXTRALIBS"))
@@ -367,7 +373,7 @@ fn main() {
 	else {
 		pkg_config::Config::new()
 			.statik(statik)
-			.probe("libavcodec").unwrap().include_paths
+			.probe("libavcodec").expect("Couldn't find libavcodec").include_paths
 	};
 
 	if statik && cfg!(target_os = "macos") {
