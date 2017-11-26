@@ -368,15 +368,31 @@ fn main() {
 				 ffmpeg_dir.join("lib").to_string_lossy());
 
 		vec![ffmpeg_dir.join("include")]
-	}
-	// Fallback to pkg-config
-	else {
-		pkg_config::Config::new()
-			.statik(statik)
-			.probe("libavcodec").expect("Couldn't find libavcodec").include_paths
-	};
+	} else {
+		let current_dir = env::current_dir().unwrap();
+		let target = env::var("TARGET").unwrap();
+		let ffmpeg_dir = PathBuf::from(format!("{}/../../../ffmpeg/target/rust/{}", current_dir.to_string_lossy(), target));
 
-	if statik && cfg!(target_os = "macos") {
+		if fs::metadata(ffmpeg_dir.clone()).is_err() {
+			panic!("FFMPEG hasn't been compiled. Directory looked up: {}", ffmpeg_dir.to_string_lossy());
+		}
+
+		println!("cargo:rustc-link-search=native={}", ffmpeg_dir.join("lib").to_string_lossy());
+		vec![ffmpeg_dir.join("include")]
+	};
+//	// Fallback to pkg-config
+//	else {
+//		pkg_config::Config::new()
+//			.statik(statik)
+//			.probe("libavcodec").expect("Couldn't find libavcodec").include_paths
+//	};
+
+
+//	if statik && cfg!(target_os = "macos") {
+	let target = env::var("TARGET").unwrap();
+    if target.contains("darwin") {
+        println!("cargo:rustc-link-lib=iconv");
+		println!("cargo:rustc-link-lib=z");
 		let frameworks = vec![
 			"AppKit", "AudioToolbox", "AVFoundation", "CoreFoundation",
 			"CoreGraphics", "CoreMedia", "CoreServices", "CoreVideo",
