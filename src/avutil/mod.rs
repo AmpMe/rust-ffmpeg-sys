@@ -170,6 +170,6 @@ pub use self::util::*;
 pub use self::util::AVMediaType::*;
 pub use self::util::AVPictureType::*;
 
-#[cfg_attr(feature = "static", link(name = "avutil", kind = "static"))]
-#[cfg_attr(not(feature = "static"), link(name = "avutil"))]
+#[cfg_attr(feature = "static", link(name = "avutil_ampme", kind = "static"))]
+#[cfg_attr(not(feature = "static"), link(name = "avutil_ampme"))]
 extern { }
