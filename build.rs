@@ -378,6 +378,7 @@ fn main() {
 		}
 
 		println!("cargo:rustc-link-search=native={}", ffmpeg_dir.join("lib").to_string_lossy());
+		println!("cargo:rustc-link-search=native={}", ffmpeg_dir.join("bin").to_string_lossy());
 		vec![ffmpeg_dir.join("include")]
 	};
 //	// Fallback to pkg-config
