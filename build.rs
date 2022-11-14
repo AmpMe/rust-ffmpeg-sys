@@ -1,5 +1,5 @@
 extern crate num_cpus;
-extern crate gcc;
+extern crate cc;
 extern crate pkg_config;
 
 use std::env;
@@ -33,14 +33,14 @@ fn search() -> PathBuf {
 }
 
 fn fetch() -> io::Result<()> {
-	let status = try!(Command::new("git")
+	let status = Command::new("git")
 		.current_dir(&output())
 		.arg("clone")
 		.arg("-b")
 		.arg(format!("release/{}", version()))
 		.arg("https://github.com/FFmpeg/FFmpeg")
 		.arg(format!("ffmpeg-{}", version()))
-		.status());
+		.status()?;
 
 	if status.success() {
 		Ok(())
@@ -192,14 +192,15 @@ fn build() -> io::Result<()> {
 	}
 
 	// run make
-	if !try!(Command::new("make")
+	if Command::new("make")
 		.arg("-j").arg(num_cpus::get().to_string())
-		.current_dir(&source()).status()).success() {
+		.current_dir(&source()).status()?.success() {
 		return Err(io::Error::new(io::ErrorKind::Other, "make failed"));
 	}
 
+
 	// run make install
-	if !try!(Command::new("make").current_dir(&source()).arg("install").status()).success() {
+	if Command::new("make").current_dir(&source()).arg("install").status()?.success() {
 		return Err(io::Error::new(io::ErrorKind::Other, "make install failed"));
 	}
 
@@ -262,7 +263,7 @@ fn check_features(include_paths: Vec<PathBuf>, infos: &Vec<(&'static str, Option
 	"#, includes_code=includes_code, main_code=main_code).expect("Write failed");
 
 	let executable = out_dir.join(if cfg!(windows) { "check.exe" } else { "check" });
-	let mut compiler = gcc::Config::new().get_compiler().to_command();
+	let mut compiler = cc::Build::new().get_compiler().to_command();
 
   /*
 	for dir in include_paths {
@@ -517,7 +518,7 @@ fn main() {
 	}
 	let mut f = File::create(tmp.join(".build"))
 		.expect("Filed to create .build");
-	let tool = gcc::Config::new().get_compiler();
+	let tool = cc::Build::new().get_compiler();
 	write!(f, "{}", tool.path().to_string_lossy().into_owned())
 		.expect("failed to write cmd");
 	for arg in tool.args() {
