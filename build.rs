@@ -391,15 +391,21 @@ fn main() {
 
 //	if statik && cfg!(target_os = "macos") {
 	let target = env::var("TARGET").unwrap();
-    if target.contains("darwin") {
-        println!("cargo:rustc-link-lib=iconv");
+	if target.contains("apple") {
+		println!("cargo:rustc-link-lib=iconv");
 		println!("cargo:rustc-link-lib=z");
-		let frameworks = vec![
-			"AppKit", "AudioToolbox", "AVFoundation", "CoreFoundation",
-			"CoreGraphics", "CoreMedia", "CoreServices", "CoreVideo",
-			"Foundation", "OpenCL", "OpenGL", "QTKit", "QuartzCore",
-			"Security", "VideoDecodeAcceleration", "VideoToolbox"
+
+		let mut frameworks = vec![
+			"AudioToolbox", "AVFoundation", "CoreFoundation",
+			"CoreGraphics", "CoreMedia", "CoreVideo",
+			"Foundation", "QuartzCore", "Security", "VideoToolbox",
 		];
+		if target.contains("apple-darwin") {
+			frameworks.extend(&[
+				"AppKit", "CoreServices", "OpenCL", "OpenGL",
+				"QTKit", "VideoDecodeAcceleration",
+			]);
+		}
 		for f in frameworks {
 			println!("cargo:rustc-link-lib=framework={}", f);
 		}
